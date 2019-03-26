@@ -72,21 +72,14 @@ def get_val_data(data_path):
 
 
 def separate_irse_bn_paras(modules):
-    if not isinstance(modules, list):
-        modules = [*modules.modules()]
     paras_only_bn = []
     paras_wo_bn = []
-    for layer in modules:
-        if 'model' in str(layer.__class__):
-            continue
-        if 'container' in str(layer.__class__):
-            continue
-        else:
-            if 'batchnorm' in str(layer.__class__):
-                paras_only_bn.extend([*layer.parameters()])
-            else:
-                paras_wo_bn.extend([*layer.parameters()])
 
+    for name, p in modules.named_parameters():
+        if 'batchnorm' in name:
+            paras_only_bn += [p]
+        else:
+            paras_wo_bn += [p]
     return paras_only_bn, paras_wo_bn
 
 

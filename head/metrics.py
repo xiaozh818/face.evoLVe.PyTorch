@@ -26,9 +26,9 @@ class Softmax(nn.Module):
         self.weight = Parameter(torch.FloatTensor(out_features, in_features))
         self.bias = Parameter(torch.FloatTensor(out_features))
         nn.init.xavier_uniform_(self.weight)
-        nn.init.zero_(self.bias)
+        nn.init.constant(self.bias, 0)
 
-    def forward(self, x):
+    def forward(self, x, label):
         if self.device_id == None:
             out = F.linear(x, self.weight, self.bias)
         else:
