@@ -7,6 +7,9 @@ import torchvision.datasets as datasets
 from config import configurations
 from backbone.model_resnet import ResNet_50, ResNet_101, ResNet_152
 from backbone.model_irse import IR_50, IR_101, IR_152, IR_SE_50, IR_SE_101, IR_SE_152
+from backbone.mobileface import mobileface
+from backbone.ShuffleNetV2 import shufflenetv2
+from backbone.ShuffleNet import shufflenet
 from head.metrics import Softmax, ArcFace, CosFace, SphereFace, Am_softmax
 from loss.focal import FocalLoss
 from util.utils import make_weights_for_balanced_classes, get_val_data, separate_irse_bn_paras, separate_resnet_bn_paras, warm_up_lr, schedule_lr, perform_val, get_time, buffer_val, AverageMeter, accuracy
@@ -93,7 +96,10 @@ if __name__ == '__main__':
                      'IR_152': IR_152(INPUT_SIZE),
                      'IR_SE_50': IR_SE_50(INPUT_SIZE), 
                      'IR_SE_101': IR_SE_101(INPUT_SIZE), 
-                     'IR_SE_152': IR_SE_152(INPUT_SIZE)}
+                     'IR_SE_152': IR_SE_152(INPUT_SIZE),
+                     'ShuffleNet': shufflenet(), 
+                     'ShuffleNetV2': shufflenetv2(),
+                     'mobileface': mobileface()}
     BACKBONE = BACKBONE_DICT[BACKBONE_NAME]
     print("=" * 60)
     print(BACKBONE)

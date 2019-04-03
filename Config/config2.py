@@ -6,12 +6,12 @@ configurations = {
         SEED = 1337, # random seed for reproduce results
 
         DATA_ROOT = '../faces_emore', # the parent root where your train/val/test data are stored
-        MODEL_ROOT = '/home/wenhaoran/model/model6', # the root to buffer your checkpoints
-        LOG_ROOT = 'log/log6', # the root to log your train/val status
+        MODEL_ROOT = '/home/wenhaoran/model/model2', # the root to buffer your checkpoints
+        LOG_ROOT = 'log/log2', # the root to log your train/val status
         BACKBONE_RESUME_ROOT = './', # the root to resume training from a saved checkpoint
         HEAD_RESUME_ROOT = './', # the root to resume training from a saved checkpoint
 
-        BACKBONE_NAME = 'mobileface', # support: ['mobileface', 'ShuffleNet', 'ShuffleNetV2', 'ResNet_50', 'ResNet_101', 'ResNet_152', 'IR_50', 'IR_101', 'IR_152', 'IR_SE_50', 'IR_SE_101', 'IR_SE_152']
+        BACKBONE_NAME = 'ResNet_152', # support: ['mobileface', 'ShuffleNet', 'ShuffleNetV2', 'ResNet_50', 'ResNet_101', 'ResNet_152', 'IR_50', 'IR_101', 'IR_152', 'IR_SE_50', 'IR_SE_101', 'IR_SE_152']
         HEAD_NAME = 'CosFace', # support:  ['Softmax', 'ArcFace', 'CosFace', 'SphereFace', 'Am_softmax']
         LOSS_NAME = 'Softmax', # support: ['Focal', 'Softmax']
 
@@ -19,7 +19,7 @@ configurations = {
         RGB_MEAN = [0.5, 0.5, 0.5], # for normalize inputs to [-1, 1]
         RGB_STD = [0.5, 0.5, 0.5],
         EMBEDDING_SIZE = 512, # feature dimension 512 for ResNet, IR, IR_SE and 1024 for shufflenet and 256 for mobileface
-        BATCH_SIZE = 512,
+        BATCH_SIZE = 256,
         DROP_LAST = True, # whether drop the last batch to ensure consistent batch_norm statistics
         LR = 0.1, # initial LR
         NUM_EPOCH = 125, # total epoch number (use the firt 1/25 epochs to warm up)
