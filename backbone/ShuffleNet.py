@@ -220,6 +220,7 @@ class ShuffleNet(nn.Module):
         # Undefined as PyTorch's functional API can be used for on-the-fly
         # shape inference if input size is not ImageNet's 224x224
 
+        self.linear7 = nn.Conv2d(960, 960, 4, 1, 0, groups=960, bias=False )
         # Fully-connected classification layer
         num_inputs = self.stage_out_channels[-1]
         self.fc = nn.Linear(num_inputs, 512)
@@ -282,10 +283,10 @@ class ShuffleNet(nn.Module):
         x = self.stage2(x)
         x = self.stage3(x)
         x = self.stage4(x)
-
-        # global average pooling layer
-        x = F.avg_pool2d(x, x.data.size()[-2:])
-        
+        x = x.data
+        print(x.shape)
+        x = self.linear7(x)
+        print(x.shape)
         # flatten for input to fully-connected layer
         x = x.view(x.size(0), -1)
         x = self.fc(x)

@@ -153,6 +153,7 @@ class ShuffleNetV2(nn.Module):
         self.conv_last      = conv_1x1_bn(input_channel, self.stage_out_channels[-1])
 	self.globalpool = nn.Sequential(nn.AvgPool2d(int(input_size/32)))              
 	
+        self.linear7 = nn.Conv2d(1024, 1024, 4, 1, 0, groups=1024, bias=False )
 	# building classifier
 	self.classifier = nn.Sequential(nn.Linear(self.stage_out_channels[-1], 512))
 
@@ -161,7 +162,10 @@ class ShuffleNetV2(nn.Module):
         x = self.maxpool(x)
         x = self.features(x)
         x = self.conv_last(x)
-        x = self.globalpool(x)
+        print(x.data.size())
+        x = x.data
+        print(x.size())
+        x = self.linear7(x)
         print(x.size())
         x = x.view(-1, self.stage_out_channels[-1])
         x = self.classifier(x)
