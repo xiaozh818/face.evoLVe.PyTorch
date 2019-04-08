@@ -103,8 +103,8 @@ if __name__ == '__main__':
                      'IR_SE_152': IR_SE_152(INPUT_SIZE),
                      'ShuffleNet': shufflenet(), 
                      'ShuffleNetV2': shufflenetv2(),
-                     'mobilenet': mobilenet(),
-                     'mobilenetv2': mobilenetv2(),
+                     'Mobilenet': mobilenet(),
+                     'Mobilenetv2': mobilenetv2(),
                      'mobileface': mobileface()}
     BACKBONE = BACKBONE_DICT[BACKBONE_NAME]
     print("=" * 60)

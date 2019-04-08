@@ -58,10 +58,10 @@ class Net(nn.Module):
         self.fc = nn.Linear(1024, 512)
 
     def forward(self, x):
-        print(x.size())
+        #print(x.size())
         x = self.model(x)
         x = self.linear7(x)
-        print(x.size())
+        #print(x.size())
         x = x.view(-1, 1024)
         x = self.fc(x)
         return x
