@@ -6,12 +6,12 @@ configurations = {
         SEED = 1337, # random seed for reproduce results
 
         DATA_ROOT = '../faces_emore', # the parent root where your train/val/test data are stored
-        MODEL_ROOT = '/home/wenhaoran/model/model9', # the root to buffer your checkpoints
-        LOG_ROOT = 'log/log9', # the root to log your train/val status
-        BACKBONE_RESUME_ROOT = './', # the root to resume training from a saved checkpoint
-        HEAD_RESUME_ROOT = './', # the root to resume training from a saved checkpoint
+        MODEL_ROOT = '/home/wenhaoran/model/model7', # the root to buffer your checkpoints
+        LOG_ROOT = 'log/log7', # the root to log your train/val status
+        BACKBONE_RESUME_ROOT = '/home/wenhaoran/model/model6/Backbone_mobileface_Epoch_6_Batch_68232_Time_2019-04-04-09-15_checkpoint.pth', # the root to resume training from a saved checkpoint
+        HEAD_RESUME_ROOT = '/home/wenhaoran/model/model6/Head_CosFace_Epoch_6_Batch_68232_Time_2019-04-04-09-15_checkpoint.pth', # the root to resume training from a saved checkpoint
 
-        BACKBONE_NAME = 'ShuffleNet', # support: ['mobileface', 'ShuffleNet', 'ShuffleNetV2', 'Mobilenet', 'MobilenetV2', 'ResNet_50', 'ResNet_101', 'ResNet_152', 'IR_50', 'IR_101', 'IR_152', 'IR_SE_50', 'IR_SE_101', 'IR_SE_152']
+        BACKBONE_NAME = 'mobileface', # support: ['mobileface', 'ShuffleNet', 'ShuffleNetV2', 'ResNet_50', 'ResNet_101', 'ResNet_152', 'IR_50', 'IR_101', 'IR_152', 'IR_SE_50', 'IR_SE_101', 'IR_SE_152']
         HEAD_NAME = 'CosFace', # support:  ['Softmax', 'ArcFace', 'CosFace', 'SphereFace', 'Am_softmax']
         LOSS_NAME = 'Softmax', # support: ['Focal', 'Softmax']
 
@@ -21,7 +21,7 @@ configurations = {
         EMBEDDING_SIZE = 512, # feature dimension 512 for ResNet, IR, IR_SE and 1024 for shufflenet and 256 for mobileface
         BATCH_SIZE = 512,
         DROP_LAST = True, # whether drop the last batch to ensure consistent batch_norm statistics
-        LR = 0.1, # initial LR
+        LR = 0.01, # initial LR
         NUM_EPOCH = 125, # total epoch number (use the firt 1/25 epochs to warm up)
         WEIGHT_DECAY = 5e-4, # do not apply to batch_norm parameters
         MOMENTUM = 0.9,

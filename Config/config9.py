@@ -11,7 +11,7 @@ configurations = {
         BACKBONE_RESUME_ROOT = './', # the root to resume training from a saved checkpoint
         HEAD_RESUME_ROOT = './', # the root to resume training from a saved checkpoint
 
-        BACKBONE_NAME = 'ShuffleNet', # support: ['mobileface', 'ShuffleNet', 'ShuffleNetV2', 'Mobilenet', 'MobilenetV2', 'ResNet_50', 'ResNet_101', 'ResNet_152', 'IR_50', 'IR_101', 'IR_152', 'IR_SE_50', 'IR_SE_101', 'IR_SE_152']
+        BACKBONE_NAME = 'ShuffleNet', # support: ['mobileface', 'ShuffleNet', 'ShuffleNetV2', 'ResNet_50', 'ResNet_101', 'ResNet_152', 'IR_50', 'IR_101', 'IR_152', 'IR_SE_50', 'IR_SE_101', 'IR_SE_152']
         HEAD_NAME = 'CosFace', # support:  ['Softmax', 'ArcFace', 'CosFace', 'SphereFace', 'Am_softmax']
         LOSS_NAME = 'Softmax', # support: ['Focal', 'Softmax']
 

@@ -162,11 +162,11 @@ class ShuffleNetV2(nn.Module):
         x = self.maxpool(x)
         x = self.features(x)
         x = self.conv_last(x)
-        print(x.data.size())
+        #print(x.data.size())
         x = x.data
-        print(x.size())
+        #print(x.size())
         x = self.linear7(x)
-        print(x.size())
+        #print(x.size())
         x = x.view(-1, self.stage_out_channels[-1])
         x = self.classifier(x)
         return x

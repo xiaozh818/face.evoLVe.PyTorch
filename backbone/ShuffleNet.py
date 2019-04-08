@@ -284,9 +284,9 @@ class ShuffleNet(nn.Module):
         x = self.stage3(x)
         x = self.stage4(x)
         x = x.data
-        print(x.shape)
+        #print(x.shape)
         x = self.linear7(x)
-        print(x.shape)
+        #print(x.shape)
         # flatten for input to fully-connected layer
         x = x.view(x.size(0), -1)
         x = self.fc(x)
