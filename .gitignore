@@ -1,5 +1,6 @@
 __pycache__/
-model/
+model
 log/
 *.swp
 *.pyc
+config.py

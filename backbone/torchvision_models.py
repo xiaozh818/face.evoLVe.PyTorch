@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
-# code reference: https://github.com/Cadene/pretrained-models.pytorch/blob/master/pretrainedmodels/models/torchvision_models.py
 
 from __future__ import print_function, division, absolute_import
 import torchvision.models as models
 import torch.utils.model_zoo as model_zoo
 import torch.nn.functional as F
+import torch.nn as nn
+import torch
+from torch.autograd import Variable
 import types
 import re
 
@@ -315,8 +317,8 @@ def inceptionv3(num_classes=1000, pretrained='imagenet'):
 
 def modify_resnets(model):
     # Modify attributs
-    model.last_linear = model.fc
-    model.fc = None
+    #model.last_linear = model.fc
+    #model.fc = None
 
     def features(self, input):
         x = self.conv1(input)
@@ -331,9 +333,9 @@ def modify_resnets(model):
         return x
 
     def logits(self, features):
-        x = self.avgpool(features)
-        x = x.view(x.size(0), -1)
-        x = self.last_linear(x)
+        x = features.view(features.size(0), -1)
+        #x = self.last_linear(x)
+        x = self.fc(x)
         return x
 
     def forward(self, input):
@@ -347,55 +349,45 @@ def modify_resnets(model):
     model.forward = types.MethodType(forward, model)
     return model
 
-def resnet18(num_classes=1000, pretrained='imagenet'):
+def loadResnetModel(model, input_size, model_name, num_classes=1000, pretrained='imagenet'):
+    if pretrained is not None:
+        settings = pretrained_settings[model_name][pretrained]
+        model = load_pretrained(model, num_classes, settings)
+    if input_size[0] == 112:
+        model.fc = nn.Linear(2048 * 4 * 4, 512)
+    else:
+        model.fc = nn.Linear(2048 * 8 * 8, 512)
+    return modify_resnets(model)
+
+def resnet18(input_size):
     """Constructs a ResNet-18 model.
     """
     model = models.resnet18(pretrained=False)
-    if pretrained is not None:
-        settings = pretrained_settings['resnet18'][pretrained]
-        model = load_pretrained(model, num_classes, settings)
-    model = modify_resnets(model)
-    return model
+    return loadResnetModel(model, input_size, 'resnet18')
 
-def resnet34(num_classes=1000, pretrained='imagenet'):
+def resnet34(input_size):
     """Constructs a ResNet-34 model.
     """
     model = models.resnet34(pretrained=False)
-    if pretrained is not None:
-        settings = pretrained_settings['resnet34'][pretrained]
-        model = load_pretrained(model, num_classes, settings)
-    model = modify_resnets(model)
-    return model
+    return loadResnetModel(model, input_size, 'resnet34')
 
-def resnet50(num_classes=1000, pretrained='imagenet'):
+def resnet50(input_size):
     """Constructs a ResNet-50 model.
     """
     model = models.resnet50(pretrained=False)
-    if pretrained is not None:
-        settings = pretrained_settings['resnet50'][pretrained]
-        model = load_pretrained(model, num_classes, settings)
-    model = modify_resnets(model)
-    return model
+    return loadResnetModel(model, input_size, 'resnet50')
 
-def resnet101(num_classes=1000, pretrained='imagenet'):
+def resnet101(input_size):
     """Constructs a ResNet-101 model.
     """
     model = models.resnet101(pretrained=False)
-    if pretrained is not None:
-        settings = pretrained_settings['resnet101'][pretrained]
-        model = load_pretrained(model, num_classes, settings)
-    model = modify_resnets(model)
-    return model
+    return loadResnetModel(model, input_size, 'resnet101')
 
-def resnet152(num_classes=1000, pretrained='imagenet'):
+def resnet152(input_size):
     """Constructs a ResNet-152 model.
     """
     model = models.resnet152(pretrained=False)
-    if pretrained is not None:
-        settings = pretrained_settings['resnet152'][pretrained]
-        model = load_pretrained(model, num_classes, settings)
-    model = modify_resnets(model)
-    return model
+    return loadResnetModel(model, input_size, 'resnet152')
 
 ###############################################################
 # SqueezeNets
@@ -574,3 +566,9 @@ def vgg19_bn(num_classes=1000, pretrained='imagenet'):
     model = modify_vggs(model)
     return model
 
+if __name__ == '__main__':
+    net = resnet50([112, 112])
+    input = Variable(torch.FloatTensor(2, 3, 112, 112))
+    print(net)
+    x = net(input)
+    print(x.shape)

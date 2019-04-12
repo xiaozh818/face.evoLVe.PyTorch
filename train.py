@@ -1,10 +1,21 @@
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 
-from config import configurations
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('filename', help = 'the config name')
+args = parser.parse_args()
+
+import Config
+module = __import__('Config.{}'.format(args.filename), fromlist=['configurations'])
+configurations = getattr(module, 'configurations')
+
+from backbone.torchvision_models import resnet18, resnet34, resnet50, resnet101, resnet152
 from backbone.model_resnet import ResNet_50, ResNet_101, ResNet_152
 from backbone.model_irse import IR_50, IR_101, IR_152, IR_SE_50, IR_SE_101, IR_SE_152
 
@@ -57,6 +68,7 @@ if __name__ == '__main__':
 	DEVICE = cfg['DEVICE']
 	MULTI_GPU = cfg['MULTI_GPU'] # flag to use multiple GPUs
 	GPU_ID = cfg['GPU_ID'] # specify your GPU ids
+#os.environ['CUDA_VISIBLE_DEVICES'] = GPU_ID
 	PIN_MEMORY = cfg['PIN_MEMORY']
 	NUM_WORKERS = cfg['NUM_WORKERS']
 	print("=" * 60)
@@ -94,9 +106,11 @@ if __name__ == '__main__':
 
 
 	#======= model & loss & optimizer =======#
-	BACKBONE_DICT = {'ResNet_50': ResNet_50(INPUT_SIZE), 
-					 'ResNet_101': ResNet_101(INPUT_SIZE), 
-					 'ResNet_152': ResNet_152(INPUT_SIZE),
+	BACKBONE_DICT = {'ResNet_18': resnet18(INPUT_SIZE), 
+					 'ResNet_34': resnet34(INPUT_SIZE),
+					 'ResNet_50': resnet101(INPUT_SIZE),
+					 'ResNet_101': resnet101(INPUT_SIZE),
+					 'ResNet_152': resnet152(INPUT_SIZE),
 					 'IR_50': IR_50(INPUT_SIZE), 
 					 'IR_101': IR_101(INPUT_SIZE), 
 					 'IR_152': IR_152(INPUT_SIZE),
