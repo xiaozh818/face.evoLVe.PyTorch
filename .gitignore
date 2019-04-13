@@ -4,3 +4,4 @@ log/
 *.swp
 *.pyc
 config.py
+py3/
