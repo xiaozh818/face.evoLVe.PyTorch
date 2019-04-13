@@ -27,9 +27,9 @@ configurations = {
         MOMENTUM = 0.9,
         STAGES = [35, 65, 95], # epoch stages to decay learning rate
 
-        DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
+        DEVICE = torch.device("cuda:1" if torch.cuda.is_available() else "cpu"),
         MULTI_GPU = True, # flag to use multiple GPUs; if you choose to train with single GPU, you should first run "export CUDA_VISILE_DEVICES=device_id" to specify the GPU card you want to use
-        GPU_ID = [0, 1, 2, 3, 4, 5, 6, 7], # specify your GPU ids
+        GPU_ID = [1, 2], # specify your GPU ids
         PIN_MEMORY = True,
         NUM_WORKERS = 8,
 ),
