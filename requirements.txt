@@ -1,0 +1,9 @@
+torchvision
+torch
+tensorflow-gpu==1.10
+matplotlib
+sklearn
+tqdm
+bcolz
+tensorboardX
+tensorboard
