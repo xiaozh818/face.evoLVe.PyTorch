@@ -117,8 +117,8 @@ if __name__ == '__main__':
 					 'IR_SE_50': IR_SE_50(INPUT_SIZE), 
 					 'IR_SE_101': IR_SE_101(INPUT_SIZE), 
 					 'IR_SE_152': IR_SE_152(INPUT_SIZE),
-					 'ShuffleNet': shufflenet(), 
-					 'ShuffleNetV2': shufflenetv2(),
+					 'ShuffleNet': shufflenet(cfg=cfg), 
+					 'ShuffleNetV2': shufflenetv2(cfg=cfg),
 					 'Mobilenet': mobilenet(),
 					 'Mobilenetv2': mobilenetv2(),
 					 'mobileface': mobileface()}

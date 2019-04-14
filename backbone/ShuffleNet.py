@@ -64,7 +64,7 @@ class ShuffleUnit(nn.Module):
 		self.grouped_conv = grouped_conv
 		self.combine = combine
 		self.groups = groups
-		self.bottleneck_channels = self.out_channels // 4
+		self.bottleneck_channels = self.out_channels# // 4
 
 		# define the type of ShuffleUnit
 		if self.combine == 'add':
@@ -166,7 +166,7 @@ class ShuffleNet(nn.Module):
 	"""ShuffleNet implementation.
 	"""
 
-	def __init__(self, groups=3, in_channels=3, num_classes=1000):
+	def __init__(self, groups=3, in_channels=3, num_classes=1000, cfg={}):
 		"""ShuffleNet constructor.
 
 		Arguments:
@@ -220,8 +220,14 @@ class ShuffleNet(nn.Module):
 		# Undefined as PyTorch's functional API can be used for on-the-fly
 		# shape inference if input size is not ImageNet's 224x224
 
-		#self.linear7 = nn.Conv2d(960, 960, 4, 1, 0, groups=960, bias=False )
-		self.linear7 = nn.Linear(960 * 4 * 4, 960)
+		self.cfg = cfg
+		pooling = cfg.get('POOLING', 'Linear')
+		if pooling == 'Linear':
+			self.linear7 = nn.Linear(960 * 4 * 4, 960)
+		elif pooling == 'GDConv':
+			self.linear7 = nn.Conv2d(960, 960, 4, 1, 0, groups=1024, bias=False )
+		else:
+			self.linear7 = nn.AvgPool2d(4)
 		# Fully-connected classification layer
 		num_inputs = self.stage_out_channels[-1]
 		self.fc = nn.Linear(num_inputs, 512)
@@ -286,8 +292,10 @@ class ShuffleNet(nn.Module):
 		x = self.stage4(x)
 		x = x.data
 		#print(x.shape)
-		x = x.view(x.size(0), -1)
+		if self.cfg.get('POOLING', 'Linear') == 'Linear':
+			x = x.view(x.size(0), -1)
 		x = self.linear7(x)
+		x = x.view(x.size(0), -1)
 		#print(x.shape)
 		# flatten for input to fully-connected layer
 		x = self.fc(x)
@@ -295,8 +303,8 @@ class ShuffleNet(nn.Module):
 		return x
 
 
-def shufflenet():
-	model = ShuffleNet()
+def shufflenet(cfg={}):
+	model = ShuffleNet(cfg=cfg)
 	return model
 
 if __name__ == "__main__":

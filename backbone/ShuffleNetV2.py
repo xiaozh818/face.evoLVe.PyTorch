@@ -105,7 +105,7 @@ class InvertedResidual(nn.Module):
 
 
 class ShuffleNetV2(nn.Module):
-	def __init__(self, n_class=1000, input_size=224, width_mult=1.):
+	def __init__(self, n_class=1000, input_size=224, width_mult=1., cfg={}):
 		super(ShuffleNetV2, self).__init__()
 		
 		assert input_size % 32 == 0
@@ -146,14 +146,19 @@ class ShuffleNetV2(nn.Module):
 				
 		# make it nn.Sequential
 		self.features = nn.Sequential(*self.features)
+		self.cfg = cfg
 		print(self.features)
 		print("=====")
 		# building last several layers
 		self.conv_last		= conv_1x1_bn(input_channel, self.stage_out_channels[-1])
-		self.globalpool = nn.Sequential(nn.AvgPool2d(int(input_size/32)))			   
 	
-		#self.linear7 = nn.Conv2d(1024, 1024, 4, 1, 0, groups=1024, bias=False )
-		self.linear7 = nn.Linear(1024 * 4 * 4, 1024)
+		pooling = cfg.get('POOLING', 'Linear')
+		if pooling == 'Linear':
+			self.linear7 = nn.Linear(1024 * 4 * 4, 1024)
+		elif pooling == 'GDConv':
+			self.linear7 = nn.Conv2d(1024, 1024, 4, 1, 0, groups=1024, bias=False )
+		else:
+			self.linear7 = nn.AvgPool2d(4)
 		# building classifier
 		self.classifier = nn.Sequential(nn.Linear(self.stage_out_channels[-1], 512))
 
@@ -164,16 +169,15 @@ class ShuffleNetV2(nn.Module):
 		x = self.conv_last(x)
 		#print(x.data.size())
 		#x = x.data
-		x = x.view(x.size(0), -1)
-		#print(x.size())
+		if self.cfg.get('POOLING', 'Linear') == 'Linear':
+			x = x.view(x.size(0), -1)
 		x = self.linear7(x)
-		#print(x.size())
 		x = x.view(-1, self.stage_out_channels[-1])
 		x = self.classifier(x)
 		return x
 
-def shufflenetv2(width_mult=1.):
-	model = ShuffleNetV2(width_mult=width_mult)
+def shufflenetv2(width_mult=1., cfg={}):
+	model = ShuffleNetV2(width_mult=width_mult, cfg=cfg)
 	return model
 	
 if __name__ == "__main__":
