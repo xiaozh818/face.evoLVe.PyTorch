@@ -1,7 +1,6 @@
 import torch.nn as nn
 from torch.nn import Linear, Conv2d, BatchNorm1d, BatchNorm2d, ReLU, Dropout, MaxPool2d, Sequential, Module
 
-
 # Support: ['ResNet_50', 'ResNet_101', 'ResNet_152']
 
 
@@ -87,10 +86,40 @@ class Bottleneck(Module):
 
         return out
 
+class Bottleneck_34(Module):
+    expansion = 1
+    def __init__(self, inplanes, planes, stride = 1, downsample = None):
+        super(Bottleneck_34, self).__init__()
+        self.conv1 = conv3x3(inplanes, planes)
+        self.bn1 = BatchNorm2d(planes)
+        self.conv2 = conv3x3(planes, planes, stride)
+        self.bn2 = BatchNorm2d(planes)
+        self.relu = ReLU(inplace = True)
+        self.downsample = downsample
+        self.stride = stride
+
+    def forward(self, x):
+        identity = x
+
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.bn2(out)
+
+        if self.downsample is not None:
+            identity = self.downsample(x)
+
+        out += identity
+        out = self.relu(out)
+
+        return out
+
 
 class ResNet(Module):
 
-    def __init__(self, input_size, block, layers, zero_init_residual = True):
+    def __init__(self, input_size, block, layers, zero_init_residual = True, fc_input_size=2048):
         super(ResNet, self).__init__()
         assert input_size[0] in [112, 224], "input_size should be [112, 112] or [224, 224]"
         self.inplanes = 64
@@ -103,12 +132,12 @@ class ResNet(Module):
         self.layer3 = self._make_layer(block, 256, layers[2], stride = 2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride = 2)
 
-        self.bn_o1 = BatchNorm2d(2048)
+        self.bn_o1 = BatchNorm2d(fc_input_size)
         self.dropout = Dropout()
         if input_size[0] == 112:
-            self.fc = Linear(2048 * 4 * 4, 512)
+            self.fc = Linear(fc_input_size * 4 * 4, 512)
         else:
-            self.fc = Linear(2048 * 8 * 8, 512)
+            self.fc = Linear(fc_input_size * 8 * 8, 512)
         self.bn_o2 = BatchNorm1d(512)
 
         for m in self.modules():
@@ -145,15 +174,20 @@ class ResNet(Module):
         return Sequential(*layers)
 
     def forward(self, x):
+        #print(x.size())
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
         x = self.maxpool(x)
 
         x = self.layer1(x)
+        #print(x.size())
         x = self.layer2(x)
+        #print(x.size())
         x = self.layer3(x)
+        #print(x.size())
         x = self.layer4(x)
+        #print(x.size())
 
         x = self.bn_o1(x)
         x = self.dropout(x)
@@ -163,6 +197,13 @@ class ResNet(Module):
 
         return x
 
+
+def ResNet_34(input_size, **kwargs):
+    """Constructs a ResNet-34 model.
+    """
+    model = ResNet(input_size, Bottleneck_34, [3, 4, 6, 3], fc_input_size=512, **kwargs)
+
+    return model
 
 def ResNet_50(input_size, **kwargs):
     """Constructs a ResNet-50 model.
