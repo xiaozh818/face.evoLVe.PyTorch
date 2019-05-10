@@ -5,11 +5,11 @@ configurations = {
     1: dict(
         SEED = 1337, # random seed for reproduce results
 
-        DATA_ROOT = '/data/zihao/face_emores', # the parent root where your train/val/test data are stored
+        DATA_ROOT = '/data/haoran/faces_emore', # the parent root where your train/val/test data are stored
         MODEL_ROOT = './model/model26', # the root to buffer your checkpoints
         LOG_ROOT = 'log/log26', # the root to log your train/val status
-        BACKBONE_RESUME_ROOT = './model/model25/Backbone_ResNet_34_Epoch_3_Batch_34116_Time_2019-04-20-09-11_checkpoint.pth', # the root to resume training from a saved checkpoint
-        HEAD_RESUME_ROOT = './model/model25/Head_CosFace_Epoch_3_Batch_34116_Time_2019-04-20-09-11_checkpoint.pth', # the root to resume training from a saved checkpoint
+        BACKBONE_RESUME_ROOT = './', # the root to resume training from a saved checkpoint
+        HEAD_RESUME_ROOT = './', # the root to resume training from a saved checkpoint
 
         BACKBONE_NAME = 'ResNet_34', # support: ['mobileface', 'ShuffleNet', 'ShuffleNetV2', 'ResNet_50', 'ResNet_101', 'ResNet_152', 'IR_50', 'IR_101', 'IR_152', 'IR_SE_50', 'IR_SE_101', 'IR_SE_152']
         HEAD_NAME = 'CosFace', # support:  ['Softmax', 'ArcFace', 'CosFace', 'SphereFace', 'Am_softmax']
