@@ -33,6 +33,84 @@ from tensorboardX import SummaryWriter
 from tqdm import tqdm
 import os
 
+#@profile
+def OneEpoch(epoch, train_loader, OPTIMIZER, DISP_FREQ, NUM_EPOCH_WARM_UP, NUM_BATCH_WARM_UP):
+    losses = AverageMeter()
+    top1 = AverageMeter()
+    top5 = AverageMeter()
+    batch = 0
+#iterator = iter(train_loader)
+    for index, (inputs, labels) in enumerate(train_loader):
+        if (epoch + 1 <= NUM_EPOCH_WARM_UP) and (batch + 1 <= NUM_BATCH_WARM_UP): # adjust LR for each training batch during warm up
+            warm_up_lr(batch + 1, NUM_BATCH_WARM_UP, LR, OPTIMIZER)
+
+        # compute output
+        inputs = inputs.to(DEVICE)
+        labels = labels.to(DEVICE).long()
+        features = BACKBONE(inputs)
+        outputs = HEAD(features, labels)
+        loss = LOSS(outputs, labels)
+    
+        # measure accuracy and record loss
+        prec1, prec5 = accuracy(outputs.data, labels, topk = (1, 5))
+        losses.update(loss.data.item(), inputs.size(0))
+        top1.update(prec1.data.item(), inputs.size(0))
+        top5.update(prec5.data.item(), inputs.size(0))
+    
+        # compute gradient and do SGD step
+        OPTIMIZER.zero_grad()
+        loss.backward()
+        OPTIMIZER.step()
+                
+                # dispaly training loss & acc every DISP_FREQ
+        if ((batch + 1) % DISP_FREQ == 0) and batch != 0:
+            print("=" * 60)
+            print('Epoch {}/{} Batch {}/{}\t'
+                 'Training Loss {loss.val:.4f} ({loss.avg:.4f})\t'
+                 'Training Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
+                 'Training Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
+                 epoch + 1, NUM_EPOCH, batch + 1, len(train_loader) * NUM_EPOCH, loss = losses, top1 = top1, top5 = top5))
+            print("=" * 60)
+        batch += 1
+
+    epoch_loss = losses.avg
+    epoch_acc = top1.avg
+    writer.add_scalar("Training_Loss", epoch_loss, epoch + 1)
+    writer.add_scalar("Training_Accuracy", epoch_acc, epoch + 1)
+    print("=" * 60)
+    print('Epoch: {}/{}\t'
+        'Training Loss {loss.val:.4f} ({loss.avg:.4f})\t'
+        'Training Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
+        'Training Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
+        epoch + 1, NUM_EPOCH, loss = losses, top1 = top1, top5 = top5))
+    print("=" * 60)
+    # perform validation & save checkpoints per epoch
+    # validation statistics per epoch (buffer for visualization)
+    print("=" * 60)
+    print("Perform Evaluation on LFW, CFP_FF, CFP_FP, AgeDB, CALFW, CPLFW and VGG2_FP, and Save Checkpoints...")
+    accuracy_lfw, best_threshold_lfw, roc_curve_lfw = perform_val(MULTI_GPU, DEVICE, EMBEDDING_SIZE, BATCH_SIZE, BACKBONE, lfw, lfw_issame)
+    buffer_val(writer, "LFW", accuracy_lfw, best_threshold_lfw, roc_curve_lfw, epoch + 1)
+#		accuracy_cfp_ff, best_threshold_cfp_ff, roc_curve_cfp_ff = perform_val(MULTI_GPU, DEVICE, EMBEDDING_SIZE, BATCH_SIZE, BACKBONE, cfp_ff, cfp_ff_issame)
+#		buffer_val(writer, "CFP_FF", accuracy_cfp_ff, best_threshold_cfp_ff, roc_curve_cfp_ff, epoch + 1)
+#		accuracy_cfp_fp, best_threshold_cfp_fp, roc_curve_cfp_fp = perform_val(MULTI_GPU, DEVICE, EMBEDDING_SIZE, BATCH_SIZE, BACKBONE, cfp_fp, cfp_fp_issame)
+#		buffer_val(writer, "CFP_FP", accuracy_cfp_fp, best_threshold_cfp_fp, roc_curve_cfp_fp, epoch + 1)
+#		accuracy_agedb, best_threshold_agedb, roc_curve_agedb = perform_val(MULTI_GPU, DEVICE, EMBEDDING_SIZE, BATCH_SIZE, BACKBONE, agedb, agedb_issame)
+#		buffer_val(writer, "AgeDB", accuracy_agedb, best_threshold_agedb, roc_curve_agedb, epoch + 1)
+#		accuracy_calfw, best_threshold_calfw, roc_curve_calfw = perform_val(MULTI_GPU, DEVICE, EMBEDDING_SIZE, BATCH_SIZE, BACKBONE, calfw, calfw_issame)
+#		buffer_val(writer, "CALFW", accuracy_calfw, best_threshold_calfw, roc_curve_calfw, epoch + 1)
+#		accuracy_cplfw, best_threshold_cplfw, roc_curve_cplfw = perform_val(MULTI_GPU, DEVICE, EMBEDDING_SIZE, BATCH_SIZE, BACKBONE, cplfw, cplfw_issame)
+#		buffer_val(writer, "CPLFW", accuracy_cplfw, best_threshold_cplfw, roc_curve_cplfw, epoch + 1)
+    accuracy_vgg2_fp, best_threshold_vgg2_fp, roc_curve_vgg2_fp = perform_val(MULTI_GPU, DEVICE, EMBEDDING_SIZE, BATCH_SIZE, BACKBONE, vgg2_fp, vgg2_fp_issame)
+    buffer_val(writer, "VGGFace2_FP", accuracy_vgg2_fp, best_threshold_vgg2_fp, roc_curve_vgg2_fp, epoch + 1)
+    print("=" * 60)
+
+    # save checkpoints per epoch
+    if MULTI_GPU:
+        torch.save(BACKBONE.module.state_dict(), os.path.join(MODEL_ROOT, "Backbone_{}_Epoch_{}_Batch_{}_Time_{}_checkpoint.pth".format(BACKBONE_NAME, epoch + 1, batch, get_time())))
+        torch.save(HEAD.state_dict(), os.path.join(MODEL_ROOT, "Head_{}_Epoch_{}_Batch_{}_Time_{}_checkpoint.pth".format(HEAD_NAME, epoch + 1, batch, get_time())))
+    else:
+        torch.save(BACKBONE.state_dict(), os.path.join(MODEL_ROOT, "Backbone_{}_Epoch_{}_Batch_{}_Time_{}_checkpoint.pth".format(BACKBONE_NAME, epoch + 1, batch, get_time())))
+        torch.save(HEAD.state_dict(), os.path.join(MODEL_ROOT, "Head_{}_Epoch_{}_Batch_{}_Time_{}_checkpoint.pth".format(HEAD_NAME, epoch + 1, batch, get_time())))
 
 if __name__ == '__main__':
 
@@ -199,83 +277,6 @@ if __name__ == '__main__':
 		BACKBONE.train()  # set to training mode
 		HEAD.train()
 
-		losses = AverageMeter()
-		top1 = AverageMeter()
-		top5 = AverageMeter()
-
-		iterator = iter(train_loader)
-		for inputs, labels in tqdm(iterator):
-
-			if (epoch + 1 <= NUM_EPOCH_WARM_UP) and (batch + 1 <= NUM_BATCH_WARM_UP): # adjust LR for each training batch during warm up
-				warm_up_lr(batch + 1, NUM_BATCH_WARM_UP, LR, OPTIMIZER)
-
-			# compute output
-			inputs = inputs.to(DEVICE)
-			labels = labels.to(DEVICE).long()
-			features = BACKBONE(inputs)
-			outputs = HEAD(features, labels)
-			loss = LOSS(outputs, labels)
-
-			# measure accuracy and record loss
-			prec1, prec5 = accuracy(outputs.data, labels, topk = (1, 5))
-			losses.update(loss.data.item(), inputs.size(0))
-			top1.update(prec1.data.item(), inputs.size(0))
-			top5.update(prec5.data.item(), inputs.size(0))
-
-			# compute gradient and do SGD step
-			OPTIMIZER.zero_grad()
-			loss.backward()
-			OPTIMIZER.step()
-			
-			# dispaly training loss & acc every DISP_FREQ
-			if ((batch + 1) % DISP_FREQ == 0) and batch != 0:
-				print("=" * 60)
-				print('Epoch {}/{} Batch {}/{}\t'
-					  'Training Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-					  'Training Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
-					  'Training Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
-					epoch + 1, NUM_EPOCH, batch + 1, len(train_loader) * NUM_EPOCH, loss = losses, top1 = top1, top5 = top5))
-				print("=" * 60)
-
-			batch += 1 # batch index
+		OneEpoch(epoch, train_loader, OPTIMIZER, DISP_FREQ, NUM_EPOCH_WARM_UP, NUM_BATCH_WARM_UP)
 
 		# training statistics per epoch (buffer for visualization)
-		epoch_loss = losses.avg
-		epoch_acc = top1.avg
-		writer.add_scalar("Training_Loss", epoch_loss, epoch + 1)
-		writer.add_scalar("Training_Accuracy", epoch_acc, epoch + 1)
-		print("=" * 60)
-		print('Epoch: {}/{}\t'
-			  'Training Loss {loss.val:.4f} ({loss.avg:.4f})\t'
-			  'Training Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
-			  'Training Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
-			epoch + 1, NUM_EPOCH, loss = losses, top1 = top1, top5 = top5))
-		print("=" * 60)
-
-		# perform validation & save checkpoints per epoch
-		# validation statistics per epoch (buffer for visualization)
-		print("=" * 60)
-		print("Perform Evaluation on LFW, CFP_FF, CFP_FP, AgeDB, CALFW, CPLFW and VGG2_FP, and Save Checkpoints...")
-		accuracy_lfw, best_threshold_lfw, roc_curve_lfw = perform_val(MULTI_GPU, DEVICE, EMBEDDING_SIZE, BATCH_SIZE, BACKBONE, lfw, lfw_issame)
-		buffer_val(writer, "LFW", accuracy_lfw, best_threshold_lfw, roc_curve_lfw, epoch + 1)
-#		accuracy_cfp_ff, best_threshold_cfp_ff, roc_curve_cfp_ff = perform_val(MULTI_GPU, DEVICE, EMBEDDING_SIZE, BATCH_SIZE, BACKBONE, cfp_ff, cfp_ff_issame)
-#		buffer_val(writer, "CFP_FF", accuracy_cfp_ff, best_threshold_cfp_ff, roc_curve_cfp_ff, epoch + 1)
-#		accuracy_cfp_fp, best_threshold_cfp_fp, roc_curve_cfp_fp = perform_val(MULTI_GPU, DEVICE, EMBEDDING_SIZE, BATCH_SIZE, BACKBONE, cfp_fp, cfp_fp_issame)
-#		buffer_val(writer, "CFP_FP", accuracy_cfp_fp, best_threshold_cfp_fp, roc_curve_cfp_fp, epoch + 1)
-#		accuracy_agedb, best_threshold_agedb, roc_curve_agedb = perform_val(MULTI_GPU, DEVICE, EMBEDDING_SIZE, BATCH_SIZE, BACKBONE, agedb, agedb_issame)
-#		buffer_val(writer, "AgeDB", accuracy_agedb, best_threshold_agedb, roc_curve_agedb, epoch + 1)
-#		accuracy_calfw, best_threshold_calfw, roc_curve_calfw = perform_val(MULTI_GPU, DEVICE, EMBEDDING_SIZE, BATCH_SIZE, BACKBONE, calfw, calfw_issame)
-#		buffer_val(writer, "CALFW", accuracy_calfw, best_threshold_calfw, roc_curve_calfw, epoch + 1)
-#		accuracy_cplfw, best_threshold_cplfw, roc_curve_cplfw = perform_val(MULTI_GPU, DEVICE, EMBEDDING_SIZE, BATCH_SIZE, BACKBONE, cplfw, cplfw_issame)
-#		buffer_val(writer, "CPLFW", accuracy_cplfw, best_threshold_cplfw, roc_curve_cplfw, epoch + 1)
-		accuracy_vgg2_fp, best_threshold_vgg2_fp, roc_curve_vgg2_fp = perform_val(MULTI_GPU, DEVICE, EMBEDDING_SIZE, BATCH_SIZE, BACKBONE, vgg2_fp, vgg2_fp_issame)
-		buffer_val(writer, "VGGFace2_FP", accuracy_vgg2_fp, best_threshold_vgg2_fp, roc_curve_vgg2_fp, epoch + 1)
-		print("=" * 60)
-
-		# save checkpoints per epoch
-		if MULTI_GPU:
-			torch.save(BACKBONE.module.state_dict(), os.path.join(MODEL_ROOT, "Backbone_{}_Epoch_{}_Batch_{}_Time_{}_checkpoint.pth".format(BACKBONE_NAME, epoch + 1, batch, get_time())))
-			torch.save(HEAD.state_dict(), os.path.join(MODEL_ROOT, "Head_{}_Epoch_{}_Batch_{}_Time_{}_checkpoint.pth".format(HEAD_NAME, epoch + 1, batch, get_time())))
-		else:
-			torch.save(BACKBONE.state_dict(), os.path.join(MODEL_ROOT, "Backbone_{}_Epoch_{}_Batch_{}_Time_{}_checkpoint.pth".format(BACKBONE_NAME, epoch + 1, batch, get_time())))
-			torch.save(HEAD.state_dict(), os.path.join(MODEL_ROOT, "Head_{}_Epoch_{}_Batch_{}_Time_{}_checkpoint.pth".format(HEAD_NAME, epoch + 1, batch, get_time())))
