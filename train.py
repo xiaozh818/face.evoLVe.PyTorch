@@ -32,6 +32,7 @@ from util.utils import make_weights_for_balanced_classes, get_val_data, separate
 from tensorboardX import SummaryWriter
 from tqdm import tqdm
 import os
+import time
 
 #@profile
 def OneEpoch(epoch, train_loader, OPTIMIZER, DISP_FREQ, NUM_EPOCH_WARM_UP, NUM_BATCH_WARM_UP):
@@ -40,7 +41,8 @@ def OneEpoch(epoch, train_loader, OPTIMIZER, DISP_FREQ, NUM_EPOCH_WARM_UP, NUM_B
     top5 = AverageMeter()
     batch = 0
 #iterator = iter(train_loader)
-    for index, (inputs, labels) in enumerate(train_loader):
+    start = time.time()
+    for inputs, labels in train_loader:
         if (epoch + 1 <= NUM_EPOCH_WARM_UP) and (batch + 1 <= NUM_BATCH_WARM_UP): # adjust LR for each training batch during warm up
             warm_up_lr(batch + 1, NUM_BATCH_WARM_UP, LR, OPTIMIZER)
 
@@ -70,6 +72,8 @@ def OneEpoch(epoch, train_loader, OPTIMIZER, DISP_FREQ, NUM_EPOCH_WARM_UP, NUM_B
                  'Training Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
                  'Training Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
                  epoch + 1, NUM_EPOCH, batch + 1, len(train_loader) * NUM_EPOCH, loss = losses, top1 = top1, top5 = top5))
+            print("Running speed in the last 100 batches: {:.3f} iter/s.".format(DISP_FREQ / (time.time() - start)))
+            start = time.time()
             print("=" * 60)
         batch += 1
 
@@ -165,7 +169,7 @@ if __name__ == '__main__':
 							 std = RGB_STD),
 	])
 
-	dataset_train = datasets.ImageFolder(os.path.join(DATA_ROOT, 'imgs'), train_transform)
+	dataset_train = datasets.ImageFolder(os.path.join(DATA_ROOT, 'ms1mv2-asia'), train_transform)
 
 	# create a weighted random sampler to process imbalanced data
 	weights = make_weights_for_balanced_classes(dataset_train.imgs, len(dataset_train.classes))
