@@ -29,20 +29,7 @@ class Softmax(nn.Module):
         nn.init.constant(self.bias, 0)
 
     def forward(self, x, label):
-        if self.device_id == None:
-            out = F.linear(x, self.weight, self.bias)
-        else:
-            sub_weights = torch.chunk(self.weight, len(self.device_id), dim=0)
-            sub_biases = torch.chunk(self.bias, len(self.device_id), dim=0)
-            temp_x = x.cuda(self.device_id[0])
-            weight = sub_weights[0].cuda(self.device_id[0])
-            bias = sub_biases[0].cuda(self.device_id[0])
-            out = F.linear(temp_x, weight, bias)
-            for i in range(1, len(self.device_id)):
-                temp_x = x.cuda(self.device_id[i])
-                weight = sub_weights[i].cuda(self.device_id[i])
-                bias = sub_biases[i].cuda(self.device_id[i])
-                out = torch.cat((out, F.linear(temp_x, weight, bias).cuda(self.device_id[0])), dim=1)
+        out = F.linear(x, self.weight, self.bias)
         return out
 
     def _initialize_weights(self):
@@ -94,20 +81,7 @@ class ArcFace(nn.Module):
 
     def forward(self, input, label):
         # --------------------------- cos(theta) & phi(theta) ---------------------------
-        if self.device_id == None:
-            cosine = F.linear(F.normalize(input), F.normalize(self.weight))
-        else:
-            x = input
-            sub_weights = torch.chunk(self.weight, len(self.device_id), dim=0)
-            temp_x = x.cuda(self.device_id[0])
-            weight = sub_weights[0].cuda(self.device_id[0])
-            cosine = F.linear(F.normalize(temp_x), F.normalize(weight))
-            for i in range(1, len(self.device_id)):
-                temp_x = x.cuda(self.device_id[i])
-                weight = sub_weights[i].cuda(self.device_id[i])
-                cosine = torch.cat((cosine, F.linear(F.normalize(temp_x), F.normalize(weight)).cuda(self.device_id[0])), dim=1) 
-        sine = torch.sqrt(1.0 - torch.pow(cosine, 2))
-        phi = cosine * self.cos_m - sine * self.sin_m
+        cosine = F.linear(F.normalize(input), F.normalize(self.weight))
         if self.easy_margin:
             phi = torch.where(cosine > 0, phi, cosine)
         else:
@@ -148,18 +122,7 @@ class CosFace(nn.Module):
 
     def forward(self, input, label):
         # --------------------------- cos(theta) & phi(theta) ---------------------------
-        if self.device_id == None:
-            cosine = F.linear(F.normalize(input), F.normalize(self.weight))
-        else:
-            x = input
-            sub_weights = torch.chunk(self.weight, len(self.device_id), dim=0)
-            temp_x = x.cuda(self.device_id[0])
-            weight = sub_weights[0].cuda(self.device_id[0])
-            cosine = F.linear(F.normalize(temp_x), F.normalize(weight))
-            for i in range(1, len(self.device_id)):
-                temp_x = x.cuda(self.device_id[i])
-                weight = sub_weights[i].cuda(self.device_id[i])
-                cosine = torch.cat((cosine, F.linear(F.normalize(temp_x), F.normalize(weight)).cuda(self.device_id[0])), dim=1)
+        cosine = F.linear(F.normalize(input), F.normalize(self.weight))
         phi = cosine - self.m
         # --------------------------- convert label to one-hot ---------------------------
         one_hot = torch.zeros(cosine.size())
@@ -221,19 +184,7 @@ class SphereFace(nn.Module):
         self.lamb = max(self.LambdaMin, self.base * (1 + self.gamma * self.iter) ** (-1 * self.power))
 
         # --------------------------- cos(theta) & phi(theta) ---------------------------
-        if self.device_id == None:
-            cos_theta = F.linear(F.normalize(input), F.normalize(self.weight))
-        else:
-            x = input
-            sub_weights = torch.chunk(self.weight, len(self.device_id), dim=0)
-            temp_x = x.cuda(self.device_id[0])
-            weight = sub_weights[0].cuda(self.device_id[0])
-            cos_theta = F.linear(F.normalize(temp_x), F.normalize(weight))
-            for i in range(1, len(self.device_id)):
-                temp_x = x.cuda(self.device_id[i])
-                weight = sub_weights[i].cuda(self.device_id[i])
-                cos_theta = torch.cat((cos_theta, F.linear(F.normalize(temp_x), F.normalize(weight)).cuda(self.device_id[0])), dim=1)
-
+        cos_theta = F.linear(F.normalize(input), F.normalize(self.weight))
         cos_theta = cos_theta.clamp(-1, 1)
         cos_m_theta = self.mlambda[self.m](cos_theta)
         theta = cos_theta.data.acos()
@@ -289,19 +240,8 @@ class Am_softmax(nn.Module):
         self.kernel.data.uniform_(-1, 1).renorm_(2, 1, 1e-5).mul_(1e5)  # initialize kernel
  
     def forward(self, embbedings, label):
-        if self.device_id == None:
-            kernel_norm = l2_norm(self.kernel, axis = 0)
-            cos_theta = torch.mm(embbedings, kernel_norm)
-        else:
-            x = embbedings
-            sub_kernels = torch.chunk(self.kernel, len(self.device_id), dim=1)
-            temp_x = x.cuda(self.device_id[0])
-            kernel_norm = l2_norm(sub_kernels[0], axis = 0).cuda(self.device_id[0])
-            cos_theta = torch.mm(temp_x, kernel_norm)
-            for i in range(1, len(self.device_id)):
-                temp_x = x.cuda(self.device_id[i])
-                kernel_norm = l2_norm(sub_kernels[i], axis = 0).cuda(self.device_id[i])
-                cos_theta = torch.cat((cos_theta, torch.mm(temp_x, kernel_norm).cuda(self.device_id[0])), dim=1)
+        kernel_norm = l2_norm(self.kernel, axis = 0)
+        cos_theta = torch.mm(embbedings, kernel_norm)
 
         cos_theta = cos_theta.clamp(-1, 1)  # for numerical stability
         phi = cos_theta - self.m
