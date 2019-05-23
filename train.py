@@ -166,10 +166,10 @@ if __name__ == '__main__':
 		transforms.RandomHorizontalFlip(),
 		transforms.ToTensor(),
 		transforms.Normalize(mean = RGB_MEAN,
-							 std = RGB_STD),
+				std = RGB_STD),
 	])
 
-	dataset_train = datasets.ImageFolder(os.path.join(DATA_ROOT, 'ms1mv2-asia'), train_transform)
+	dataset_train = datasets.ImageFolder(os.path.join(DATA_ROOT, 'imgs'), train_transform)
 
 	# create a weighted random sampler to process imbalanced data
 	weights = make_weights_for_balanced_classes(dataset_train.imgs, len(dataset_train.classes))
@@ -188,42 +188,62 @@ if __name__ == '__main__':
 
 
 	#======= model & loss & optimizer =======#
-	BACKBONE_DICT = {#'ResNet_18': resnet18(INPUT_SIZE), 
-#'ResNet_34': resnet34(INPUT_SIZE),
-					 'ResNet_50': ResNet_50(INPUT_SIZE),
+	if BACKBONE_NAME == 'ResNet_50':
+		BACKBONE = ResNet_50(INPUT_SIZE)
 #					 'ResNet_101': resnet101(INPUT_SIZE),
 #					 'ResNet_152': resnet152(INPUT_SIZE),
-					 'IR_50': IR_50(INPUT_SIZE), 
-					 'IR_101': IR_101(INPUT_SIZE), 
-					 'IR_152': IR_152(INPUT_SIZE),
-					 'IR_SE_50': IR_SE_50(INPUT_SIZE), 
-					 'IR_SE_101': IR_SE_101(INPUT_SIZE), 
-					 'IR_SE_152': IR_SE_152(INPUT_SIZE),
-					 'ShuffleNet': shufflenet(cfg=cfg), 
-					 'ShuffleNetV2': shufflenetv2(cfg=cfg),
-					 'Mobilenet': mobilenet(),
-					 'Mobilenetv2': mobilenetv2(),
-					 'mobileface': mobileface()}
-	BACKBONE = BACKBONE_DICT[BACKBONE_NAME]
+	elif BACKBONE_NAME == 'IR_50':
+		BACKBONE = IR_50(INPUT_SIZE)
+	elif BACKBONE_NAME == 'IR_101':
+		BACKBONE = IR_101(INPUT_SIZE)
+	elif BACKBONE_NAME == 'IR_152':
+		BACKBONE = IR_152(INPUT_SIZE)
+	elif BACKBONE_NAME == 'IR_SE_50':
+		BACKBONE = IR_SE_50(INPUT_SIZE)
+	elif BACKBONE_NAME == 'IR_SE_101':
+		BACKBONE = IR_SE_101(INPUT_SIZE)
+	elif BACKBONE_NAME == 'IR_SE_152':
+		BACKBONE = IR_SE_152(INPUT_SIZE)
+	elif BACKBONE_NAME == 'Shufflenet':
+		BACKBONE = shufflenet(cfg=cfg) 
+	elif BACKBONE_NAME == 'ShuffleNetV2':
+		BACKBONE = shufflenetv2(cfg=cfg)
+	elif BACKBONE_NAME == 'Mobilenet':
+		BACKBONE = mobilenet()
+	elif BACKBONE_NAME == 'Mobilenetv2':
+		BACKBONE = mobilenetv2()
+	elif BACKBONE_NAME == 'mobileface':
+		BACKBONE = mobileface()
+	else:
+		raise NotImplementedError
 	print("=" * 60)
 	print(BACKBONE)
 	print("{} Backbone Generated".format(BACKBONE_NAME))
 	print("=" * 60)
 
-	HEAD_DICT = {'ArcFace': ArcFace(in_features = EMBEDDING_SIZE, out_features = NUM_CLASS, device_id = GPU_ID),
-				 'CosFace': CosFace(in_features = EMBEDDING_SIZE, out_features = NUM_CLASS, device_id = GPU_ID),
-				 'SphereFace': SphereFace(in_features = EMBEDDING_SIZE, out_features = NUM_CLASS, device_id = GPU_ID),
-				 'Am_softmax': Am_softmax(in_features = EMBEDDING_SIZE, out_features = NUM_CLASS, device_id = GPU_ID),
-				 'Softmax': Softmax(in_features = EMBEDDING_SIZE, out_features = NUM_CLASS, device_id = GPU_ID)}
-	HEAD = HEAD_DICT[HEAD_NAME]
+	if HEAD_NAME == 'ArcFace':
+		HEAD = ArcFace(in_features = EMBEDDING_SIZE, out_features = NUM_CLASS, device_id = GPU_ID)
+	elif HEAD_NAME == 'CosFace':
+		HEAD = CosFace(in_features = EMBEDDING_SIZE, out_features = NUM_CLASS, device_id = GPU_ID)
+	elif HEAD_NAME == 'SphereFace':
+		HEAD = SphereFace(in_features = EMBEDDING_SIZE, out_features = NUM_CLASS, device_id = GPU_ID)
+	elif HEAD_NAME == 'Am_softmax':
+		HEAD = Am_softmax(in_features = EMBEDDING_SIZE, out_features = NUM_CLASS, device_id = GPU_ID)
+	elif HEAD_NAME == 'Softmax':
+		HEAD = Softmax(in_features = EMBEDDING_SIZE, out_features = NUM_CLASS, device_id = GPU_ID)
+	else:
+		raise NotImplementedError
 	print("=" * 60)
 	print(HEAD)
 	print("{} Head Generated".format(HEAD_NAME))
 	print("=" * 60)
 
-	LOSS_DICT = {'Focal': FocalLoss(), 
-				 'Softmax': nn.CrossEntropyLoss()}
-	LOSS = LOSS_DICT[LOSS_NAME]
+	if LOSS_NAME == 'Focal':
+		LOSS = FocalLoss()
+	elif LOSS_NAME == 'Softmax':
+		LOSS = nn.CrossEntropyLoss()
+	else:
+		raise NotImplementedError
 	print("=" * 60)
 	print(LOSS)
 	print("{} Loss Generated".format(LOSS_NAME))
@@ -257,9 +277,12 @@ if __name__ == '__main__':
 		# multi-GPU setting
 		BACKBONE = nn.DataParallel(BACKBONE, device_ids = GPU_ID)
 		BACKBONE = BACKBONE.to(DEVICE)
+		HEAD = nn.DataParallel(HEAD, device_ids = GPU_ID)
+		HEAD = HEAD.to(DEVICE)
 	else:
 		# single-GPU setting
 		BACKBONE = BACKBONE.to(DEVICE)
+		HEAD = HEAD.to(DEVICE)
 
 
 	#======= train & validation & save checkpoint =======#
