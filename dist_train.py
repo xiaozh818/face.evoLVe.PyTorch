@@ -8,7 +8,8 @@ import torchvision.datasets as datasets
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('filename', help = 'the config name')
+parser.add_argument('--local_rank', type=int)
+parser.add_argument('--filename', help = 'the config name')
 args = parser.parse_args()
 
 import Config
@@ -28,6 +29,8 @@ from backbone.MobilenetV2 import mobilenetv2
 from head.metrics import Softmax, ArcFace, CosFace, SphereFace, Am_softmax
 from loss.focal import FocalLoss
 from util.utils import make_weights_for_balanced_classes, get_val_data, separate_irse_bn_paras, separate_resnet_bn_paras, warm_up_lr, schedule_lr, perform_val, get_time, buffer_val, AverageMeter, accuracy
+from util.distsampler import distWeightedRandomSampler
+import torch.distributed as dist
 
 from tensorboardX import SummaryWriter
 from tqdm import tqdm
@@ -36,6 +39,7 @@ import time
 
 #@profile
 def OneEpoch(epoch, train_loader, OPTIMIZER, DISP_FREQ, NUM_EPOCH_WARM_UP, NUM_BATCH_WARM_UP):
+    DEVICE = 'cuda:' + str(torch.cuda.current_device())
     losses = AverageMeter()
     top1 = AverageMeter()
     top5 = AverageMeter()
@@ -117,6 +121,11 @@ def OneEpoch(epoch, train_loader, OPTIMIZER, DISP_FREQ, NUM_EPOCH_WARM_UP, NUM_B
         torch.save(HEAD.state_dict(), os.path.join(MODEL_ROOT, "Head_{}_Epoch_{}_Batch_{}_Time_{}_checkpoint.pth".format(HEAD_NAME, epoch + 1, batch, get_time())))
 
 if __name__ == '__main__':
+	#for key, _ in os.environ.items():
+	#	print(key)
+	torch.cuda.set_device(args.local_rank)
+	dist.init_process_group(backend='nccl', init_method='env://', rank=args.local_rank)
+	print("Finished initialize distributed training...")
 
 	#======= hyperparameters & data loaders =======#
 	cfg = configurations[1]
@@ -174,7 +183,7 @@ if __name__ == '__main__':
 	# create a weighted random sampler to process imbalanced data
 	weights = make_weights_for_balanced_classes(dataset_train.imgs, len(dataset_train.classes))
 	weights = torch.DoubleTensor(weights)
-	sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(weights))
+	sampler = distWeightedRandomSampler(weights, len(weights))
 
 	train_loader = torch.utils.data.DataLoader(
 		dataset_train, batch_size = BATCH_SIZE, sampler = sampler, pin_memory = PIN_MEMORY,
@@ -273,16 +282,16 @@ if __name__ == '__main__':
 			print("No Checkpoint Found at '{}' and '{}'. Please Have a Check or Continue to Train from Scratch".format(BACKBONE_RESUME_ROOT, HEAD_RESUME_ROOT))
 		print("=" * 60)
 
-	if MULTI_GPU:
-		# multi-GPU setting
-		BACKBONE = nn.DataParallel(BACKBONE, device_ids = GPU_ID)
-		BACKBONE = BACKBONE.to(DEVICE)
-		HEAD = nn.DataParallel(HEAD, device_ids = GPU_ID)
-		HEAD = HEAD.to(DEVICE)
-	else:
-		# single-GPU setting
-		BACKBONE = BACKBONE.to(DEVICE)
-		HEAD = HEAD.to(DEVICE)
+
+
+	# multi-GPU setting
+	BACKBONE = BACKBONE.cuda()
+	BACKBONE = nn.parallel.DistributedDataParallel(BACKBONE, device_ids = [args.local_rank], output_device=args.local_rank)
+#	BACKBONE = nn.parallel.DistributedDataParallel(BACKBONE)
+	HEAD = HEAD.cuda()
+	HEAD = nn.parallel.DistributedDataParallel(HEAD, device_ids = [args.local_rank], output_device=args.local_rank)
+#	LOSS = nn.parallel.DistributedDataParallel(LOSS, device_ids = [args.local_rank], output_device=args.local_rank)
+#	HEAD = nn.parallel.DistributedDataParallel(HEAD)
 
 
 	#======= train & validation & save checkpoint =======#
