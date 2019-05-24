@@ -47,8 +47,8 @@ def OneEpoch(epoch, train_loader, OPTIMIZER, DISP_FREQ, NUM_EPOCH_WARM_UP, NUM_B
             warm_up_lr(batch + 1, NUM_BATCH_WARM_UP, LR, OPTIMIZER)
 
         # compute output
-        inputs = inputs.to(DEVICE)
-        labels = labels.to(DEVICE).long()
+        inputs = inputs.to(DEVICE, non_blocking=True)
+        labels = labels.to(DEVICE, non_blocking=True).long()
         features = BACKBONE(inputs)
         outputs = HEAD(features, labels)
         loss = LOSS(outputs, labels)

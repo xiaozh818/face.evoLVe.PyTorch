@@ -5,7 +5,7 @@ configurations = {
     1: dict(
         SEED = 1337, # random seed for reproduce results
 
-        DATA_ROOT = '/data/xiaozihao/faces_emore', # the parent root where your train/val/test data are stored
+        DATA_ROOT = '/home/xiaozihao/faces_emore', # the parent root where your train/val/test data are stored
         MODEL_ROOT = 'model/model40', # the root to buffer your checkpoints
         LOG_ROOT = 'log/log40', # the root to log your train/val status
         BACKBONE_RESUME_ROOT = './', # the root to resume training from a saved checkpoint
@@ -25,12 +25,12 @@ configurations = {
         NUM_EPOCH = 125, # total epoch number (use the firt 1/25 epochs to warm up)
         WEIGHT_DECAY = 5e-4, # do not apply to batch_norm parameters
         MOMENTUM = 0.9,
-        STAGES = [35, 65, 95], # epoch stages to decay learning rate
+        STAGES = [30, 50, 60], # epoch stages to decay learning rate
 
         DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
         MULTI_GPU = True, # flag to use multiple GPUs; if you choose to train with single GPU, you should first run "export CUDA_VISILE_DEVICES=device_id" to specify the GPU card you want to use
-        GPU_ID = [0, 1, 2, 3], # specify your GPU ids
+        GPU_ID = [0,1,2,3,4,5], # specify your GPU ids
         PIN_MEMORY = True,
-        NUM_WORKERS = 16,
+        NUM_WORKERS = 8,
 ),
 }

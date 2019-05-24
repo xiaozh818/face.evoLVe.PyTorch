@@ -225,7 +225,7 @@ class ShuffleNet(nn.Module):
 		if pooling == 'Linear':
 			self.linear7 = nn.Linear(960 * 4 * 4, 960)
 		elif pooling == 'GDConv':
-			self.linear7 = nn.Conv2d(960, 960, 4, 1, 0, groups=1024, bias=False )
+			self.linear7 = nn.Conv2d(960, 960, 4, 1, 0, groups=960, bias=False )
 		else:
 			self.linear7 = nn.AvgPool2d(4)
 		# Fully-connected classification layer
