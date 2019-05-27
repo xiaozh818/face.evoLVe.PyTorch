@@ -76,7 +76,7 @@ def OneEpoch(epoch, train_loader, OPTIMIZER, DISP_FREQ, NUM_EPOCH_WARM_UP, NUM_B
                  'Training Prec@1 {top1.val:.3f} ({top1.avg:.3f})\t'
                  'Training Prec@5 {top5.val:.3f} ({top5.avg:.3f})'.format(
                  epoch + 1, NUM_EPOCH, batch + 1, len(train_loader) * NUM_EPOCH, loss = losses, top1 = top1, top5 = top5))
-            print("Running speed in the last 100 batches: {:.3f} iter/s.".format(DISP_FREQ / (time.time() - start)))
+            print("Running speed in the last {} batches: {:.3f} iter/s.".format(DISP_FREQ, DISP_FREQ / (time.time() - start)))
             start = time.time()
             print("=" * 60)
         batch += 1
@@ -115,7 +115,7 @@ def OneEpoch(epoch, train_loader, OPTIMIZER, DISP_FREQ, NUM_EPOCH_WARM_UP, NUM_B
     # save checkpoints per epoch
     if MULTI_GPU:
         torch.save(BACKBONE.module.state_dict(), os.path.join(MODEL_ROOT, "Backbone_{}_Epoch_{}_Batch_{}_Time_{}_checkpoint.pth".format(BACKBONE_NAME, epoch + 1, batch, get_time())))
-        torch.save(HEAD.state_dict(), os.path.join(MODEL_ROOT, "Head_{}_Epoch_{}_Batch_{}_Time_{}_checkpoint.pth".format(HEAD_NAME, epoch + 1, batch, get_time())))
+        torch.save(HEAD.module.state_dict(), os.path.join(MODEL_ROOT, "Head_{}_Epoch_{}_Batch_{}_Time_{}_checkpoint.pth".format(HEAD_NAME, epoch + 1, batch, get_time())))
     else:
         torch.save(BACKBONE.state_dict(), os.path.join(MODEL_ROOT, "Backbone_{}_Epoch_{}_Batch_{}_Time_{}_checkpoint.pth".format(BACKBONE_NAME, epoch + 1, batch, get_time())))
         torch.save(HEAD.state_dict(), os.path.join(MODEL_ROOT, "Head_{}_Epoch_{}_Batch_{}_Time_{}_checkpoint.pth".format(HEAD_NAME, epoch + 1, batch, get_time())))
@@ -129,7 +129,7 @@ if __name__ == '__main__':
 
 	#======= hyperparameters & data loaders =======#
 	cfg = configurations[1]
-	SEED = cfg['SEED'] # random seed for reproduce results
+	SEED = cfg['SEED'] + args.local_rank# random seed for reproduce results
 	torch.manual_seed(SEED)
 
 	DATA_ROOT = cfg['DATA_ROOT'] # the parent root where your train/val/test data are stored
@@ -275,9 +275,9 @@ if __name__ == '__main__':
 		print("=" * 60)
 		if os.path.isfile(BACKBONE_RESUME_ROOT) and os.path.isfile(HEAD_RESUME_ROOT):
 			print("Loading Backbone Checkpoint '{}'".format(BACKBONE_RESUME_ROOT))
-			BACKBONE.load_state_dict(torch.load(BACKBONE_RESUME_ROOT))
+			BACKBONE.load_state_dict(torch.load(BACKBONE_RESUME_ROOT, map_location=lambda storage, loc: storage.cuda()))
 			print("Loading Head Checkpoint '{}'".format(HEAD_RESUME_ROOT))
-			HEAD.load_state_dict(torch.load(HEAD_RESUME_ROOT))
+			HEAD.load_state_dict(torch.load(HEAD_RESUME_ROOT, map_location=lambda storage, loc: storage.cuda()))
 		else:
 			print("No Checkpoint Found at '{}' and '{}'. Please Have a Check or Continue to Train from Scratch".format(BACKBONE_RESUME_ROOT, HEAD_RESUME_ROOT))
 		print("=" * 60)
@@ -287,9 +287,9 @@ if __name__ == '__main__':
 	# multi-GPU setting
 	BACKBONE = BACKBONE.cuda()
 	BACKBONE = nn.parallel.DistributedDataParallel(BACKBONE, device_ids = [args.local_rank], output_device=args.local_rank)
-#	BACKBONE = nn.parallel.DistributedDataParallel(BACKBONE)
 	HEAD = HEAD.cuda()
 	HEAD = nn.parallel.DistributedDataParallel(HEAD, device_ids = [args.local_rank], output_device=args.local_rank)
+#	BACKBONE = nn.parallel.DistributedDataParallel(BACKBONE)
 #	LOSS = nn.parallel.DistributedDataParallel(LOSS, device_ids = [args.local_rank], output_device=args.local_rank)
 #	HEAD = nn.parallel.DistributedDataParallel(HEAD)
 
