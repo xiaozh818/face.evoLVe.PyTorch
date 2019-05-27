@@ -290,7 +290,7 @@ class ShuffleNet(nn.Module):
 		x = self.stage2(x)
 		x = self.stage3(x)
 		x = self.stage4(x)
-		x = x.data
+		#x = x.data
 		#print(x.shape)
 		if self.cfg.get('POOLING', 'Linear') == 'Linear':
 			x = x.view(x.size(0), -1)
