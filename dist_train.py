@@ -83,8 +83,9 @@ def OneEpoch(epoch, train_loader, OPTIMIZER, DISP_FREQ, NUM_EPOCH_WARM_UP, NUM_B
 
     epoch_loss = losses.avg
     epoch_acc = top1.avg
-    writer.add_scalar("Training_Loss", epoch_loss, epoch + 1)
-    writer.add_scalar("Training_Accuracy", epoch_acc, epoch + 1)
+    if writer is not None:
+        writer.add_scalar("Training_Loss", epoch_loss, epoch + 1)
+        writer.add_scalar("Training_Accuracy", epoch_acc, epoch + 1)
     print("=" * 60)
     print('Epoch: {}/{}\t'
         'Training Loss {loss.val:.4f} ({loss.avg:.4f})\t'
@@ -97,7 +98,8 @@ def OneEpoch(epoch, train_loader, OPTIMIZER, DISP_FREQ, NUM_EPOCH_WARM_UP, NUM_B
     print("=" * 60)
     print("Perform Evaluation on LFW, CFP_FF, CFP_FP, AgeDB, CALFW, CPLFW and VGG2_FP, and Save Checkpoints...")
     accuracy_lfw, best_threshold_lfw, roc_curve_lfw = perform_val(MULTI_GPU, DEVICE, EMBEDDING_SIZE, BATCH_SIZE, BACKBONE, lfw, lfw_issame)
-    buffer_val(writer, "LFW", accuracy_lfw, best_threshold_lfw, roc_curve_lfw, epoch + 1)
+    if writer is not None:
+        buffer_val(writer, "LFW", accuracy_lfw, best_threshold_lfw, roc_curve_lfw, epoch + 1)
 #		accuracy_cfp_ff, best_threshold_cfp_ff, roc_curve_cfp_ff = perform_val(MULTI_GPU, DEVICE, EMBEDDING_SIZE, BATCH_SIZE, BACKBONE, cfp_ff, cfp_ff_issame)
 #		buffer_val(writer, "CFP_FF", accuracy_cfp_ff, best_threshold_cfp_ff, roc_curve_cfp_ff, epoch + 1)
 #		accuracy_cfp_fp, best_threshold_cfp_fp, roc_curve_cfp_fp = perform_val(MULTI_GPU, DEVICE, EMBEDDING_SIZE, BATCH_SIZE, BACKBONE, cfp_fp, cfp_fp_issame)
@@ -109,7 +111,8 @@ def OneEpoch(epoch, train_loader, OPTIMIZER, DISP_FREQ, NUM_EPOCH_WARM_UP, NUM_B
 #		accuracy_cplfw, best_threshold_cplfw, roc_curve_cplfw = perform_val(MULTI_GPU, DEVICE, EMBEDDING_SIZE, BATCH_SIZE, BACKBONE, cplfw, cplfw_issame)
 #		buffer_val(writer, "CPLFW", accuracy_cplfw, best_threshold_cplfw, roc_curve_cplfw, epoch + 1)
     accuracy_vgg2_fp, best_threshold_vgg2_fp, roc_curve_vgg2_fp = perform_val(MULTI_GPU, DEVICE, EMBEDDING_SIZE, BATCH_SIZE, BACKBONE, vgg2_fp, vgg2_fp_issame)
-    buffer_val(writer, "VGGFace2_FP", accuracy_vgg2_fp, best_threshold_vgg2_fp, roc_curve_vgg2_fp, epoch + 1)
+    if writer is not None:
+        buffer_val(writer, "VGGFace2_FP", accuracy_vgg2_fp, best_threshold_vgg2_fp, roc_curve_vgg2_fp, epoch + 1)
     print("=" * 60)
 
     # save checkpoints per epoch
@@ -167,7 +170,10 @@ if __name__ == '__main__':
 	print(cfg)
 	print("=" * 60)
 
-	writer = SummaryWriter(LOG_ROOT) # writer for buffering intermedium results
+	if args.local_rank == 0:
+		writer = SummaryWriter(LOG_ROOT) # writer for buffering intermedium results
+	else:
+		writer = None
 
 	train_transform = transforms.Compose([ # refer to https://pytorch.org/docs/stable/torchvision/transforms.html for more build-in online data augmentation
 		transforms.Resize([int(128 * INPUT_SIZE[0] / 112), int(128 * INPUT_SIZE[0] / 112)]), # smaller side resized
@@ -286,9 +292,9 @@ if __name__ == '__main__':
 
 	# multi-GPU setting
 	BACKBONE = BACKBONE.cuda()
-	BACKBONE = nn.parallel.DistributedDataParallel(BACKBONE, device_ids = [args.local_rank], output_device=args.local_rank)
+	BACKBONE = nn.parallel.DistributedDataParallel(BACKBONE, device_ids = [args.local_rank], output_device=args.local_rank, find_unused_parameters=True)
 	HEAD = HEAD.cuda()
-	HEAD = nn.parallel.DistributedDataParallel(HEAD, device_ids = [args.local_rank], output_device=args.local_rank)
+	HEAD = nn.parallel.DistributedDataParallel(HEAD, device_ids = [args.local_rank], output_device=args.local_rank, find_unused_parameters=True)
 #	BACKBONE = nn.parallel.DistributedDataParallel(BACKBONE)
 #	LOSS = nn.parallel.DistributedDataParallel(LOSS, device_ids = [args.local_rank], output_device=args.local_rank)
 #	HEAD = nn.parallel.DistributedDataParallel(HEAD)
