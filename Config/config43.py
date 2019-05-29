@@ -5,7 +5,7 @@ configurations = {
     1: dict(
         SEED = 1337, # random seed for reproduce results
 
-        DATA_ROOT = '/home/xiaozihao/faces_emore', # the parent root where your train/val/test data are stored
+        DATA_ROOT = '/data/haoran/faces_emore', # the parent root where your train/val/test data are stored
         MODEL_ROOT = 'model/model43', # the root to buffer your checkpoints
         LOG_ROOT = 'log/log43', # the root to log your train/val status
         BACKBONE_RESUME_ROOT = './', # the root to resume training from a saved checkpoint
@@ -19,7 +19,7 @@ configurations = {
         RGB_MEAN = [0.5, 0.5, 0.5], # for normalize inputs to [-1, 1]
         RGB_STD = [0.5, 0.5, 0.5],
         EMBEDDING_SIZE = 512, # feature dimension 512 for ResNet, IR, IR_SE and 1024 for shufflenet and 256 for mobileface
-        BATCH_SIZE = 170,
+        BATCH_SIZE = 190,
         DROP_LAST = True, # whether drop the last batch to ensure consistent batch_norm statistics
         LR = 0.1, # initial LR
         NUM_EPOCH = 125, # total epoch number (use the firt 1/25 epochs to warm up)
@@ -29,9 +29,9 @@ configurations = {
 
         DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
         MULTI_GPU = True, # flag to use multiple GPUs; if you choose to train with single GPU, you should first run "export CUDA_VISILE_DEVICES=device_id" to specify the GPU card you want to use
-        GPU_ID = [0, 1, 2], # specify your GPU ids
+        GPU_ID = [0, 1, 2, 3, 4], # specify your GPU ids
         PIN_MEMORY = True,
-        NUM_WORKERS = 6,
+        NUM_WORKERS = 10,
         POOLING = 'GDConv'
 ),
 }
