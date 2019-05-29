@@ -99,7 +99,7 @@ class MobileNetV2(nn.Module):
         self.linear7 = nn.Conv2d(1280, 1280, 4, 1, 0, groups=1280, bias=False) 
         # building classifier
         self.classifier = nn.Sequential(
-            nn.Dropout(0.2),
+#            nn.Dropout(0.2),
             nn.Linear(1280, 512),
         )
 
